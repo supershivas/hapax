@@ -1,7 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
-  <!-- À redessiner pour le jeu : lisible à 16 px, dans la palette du jeu -->
-  <rect width="16" height="16" rx="3" fill="#14182e"/>
-  <path fill="#e9ecf5" d="M5 3h6v1h1v4h-1v1H5V8H4V4h1z"/>
-  <path fill="#14182e" d="M6 5h1v1H6zM9 5h1v1H9z"/>
-  <path fill="#e0573e" d="M5 9h6v2H5zM5 11h1v2H5zM10 11h1v2h-1z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="5" fill="#1d1915"/>
+  <path d="M16 3c.8 3 4.5 5.2 4.5 9.6a4.5 4.5 0 0 1-9 0c0-3 2.2-4.5 2.2-6.7 1.1.7 1.7 1.8 1.8 3C16 7 16.6 5.4 16 3z" fill="#d4902a"/>
+  <rect x="13.5" y="17" width="5" height="11" fill="#ece3cc"/>
+  <rect x="9" y="27" width="14" height="2" rx="1" fill="#8a6a4a"/>
 </svg>

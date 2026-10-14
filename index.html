@@ -3,36 +3,75 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#14182e">
+<meta name="theme-color" content="#1d1915">
 <title>HAPAX</title>
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="js/lib/game.css">
-<link rel="stylesheet" href="css/style.css">
+<meta property="og:title" content="HAPAX">
+<meta property="og:image" content="og.png">
+<link rel="stylesheet" href="js/lib/game.css?v=0.1.0">
+<link rel="stylesheet" href="css/style.css?v=0.1.0">
 </head>
 <body>
 <div class="jeu-ecran" id="ecran">
-  <canvas class="jeu-canvas" id="canvas" aria-label="HAPAX"></canvas>
-
-  <!-- HUD : en DOM par-dessus le canvas, mêmes couleurs que lui -->
-  <div class="hud safe-top" id="hud" hidden>
-    <span class="hud-score" id="score">0</span>
-    <button class="icone" id="pause" aria-label="Pause">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
-    </button>
-  </div>
 
   <!-- Écran titre : pas de sous-titre (section 3) -->
-  <section class="titre" id="titre">
+  <section class="ecran titre" id="titre">
+    <div class="titre-bougie" id="titre-bougie"></div>
     <h1>HAPAX</h1>
-    <nav class="titre-menu">
+    <nav class="menu">
       <button class="bouton" id="continuer" hidden>Continuer</button>
       <button class="bouton" id="nouvelle">Nouvelle partie</button>
     </nav>
     <button class="icone titre-reglages" id="ouvrir-reglages" aria-label="Réglages">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 4.3c.4-1.8 2.9-1.8 3.4 0a1.7 1.7 0 0 0 2.6 1.1c1.5-.9 3.3.8 2.4 2.4a1.7 1.7 0 0 0 1 2.5c1.8.5 1.8 3 0 3.4a1.7 1.7 0 0 0-1 2.6c.9 1.5-.9 3.3-2.4 2.4a1.7 1.7 0 0 0-2.6 1c-.5 1.8-3 1.8-3.4 0a1.7 1.7 0 0 0-2.5-1c-1.6.9-3.3-.9-2.4-2.4a1.7 1.7 0 0 0-1.1-2.6c-1.8-.4-1.8-2.9 0-3.4a1.7 1.7 0 0 0 1.1-2.5c-.9-1.6.8-3.3 2.4-2.4 1 .6 2.3.1 2.5-1.1z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
+  </section>
+
+  <!-- Les visiteurs de la nuit : on en garde deux -->
+  <section class="ecran visiteurs" id="visiteurs" hidden>
+    <h2 class="heure">Trois visiteurs</h2>
+    <p class="consigne" id="consigne-visiteurs">Garde-en deux.</p>
+    <div class="visiteurs-liste" id="visiteurs-liste"></div>
+    <button class="bouton" id="allumer" disabled>Allumer la bougie</button>
+  </section>
+
+  <!-- L'heure (la manche) -->
+  <section class="ecran table" id="table" hidden>
+    <header class="table-tete safe-top">
+      <h2 class="heure" id="heure"></h2>
+      <button class="icone" id="pause" aria-label="Pause">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+      </button>
+    </header>
+    <div class="jokers" id="jokers"></div>
+    <div class="bureau">
+      <div id="bougie"></div>
+      <div class="compte">
+        <p class="objectif">Il faut <span id="objectif"></span></p>
+        <p class="score" id="score">0</p>
+        <p class="calcul" id="calcul" aria-live="polite">&nbsp;</p>
+      </div>
+    </div>
+    <div class="page" id="page" aria-live="polite"></div>
+    <p class="message" id="message" role="status"></p>
+    <div class="main" id="main"></div>
+    <div class="gestes safe-bottom">
+      <button class="bouton bouton-second" id="froisser">Froisser</button>
+      <button class="bouton" id="ecrire">Écrire</button>
+    </div>
+  </section>
+
+  <!-- La fin de l'heure -->
+  <section class="ecran fin" id="fin" hidden>
+    <h2 class="heure" id="fin-heure"></h2>
+    <p class="fin-verdict" id="fin-verdict"></p>
+    <p class="fin-score" id="fin-score"></p>
+    <nav class="menu">
+      <button class="bouton" id="autre-nuit">Une autre nuit</button>
+      <button class="bouton bouton-second" id="fin-titre">Écran titre</button>
+    </nav>
   </section>
 </div>
 
@@ -41,15 +80,15 @@
   <h2>Pause</h2>
   <div class="menu">
     <button class="bouton" id="reprendre">Reprendre</button>
-    <button class="bouton" id="pause-reglages">Réglages</button>
-    <button class="bouton" id="quitter">Écran titre</button>
+    <button class="bouton bouton-second" id="pause-reglages">Réglages</button>
+    <button class="bouton bouton-second" id="quitter">Écran titre</button>
   </div>
 </dialog>
 
 <dialog id="dialogue-reglages" aria-label="Réglages">
   <h2>Réglages</h2>
-  <label class="curseur">Musique <input type="range" id="vol-musique" min="0" max="100" step="10"></label>
   <label class="curseur">Effets <input type="range" id="vol-effets" min="0" max="100" step="10"></label>
+  <button class="bouton bouton-second" id="plein-ecran" hidden>Plein écran</button>
   <hr>
   <p class="version" id="version">v…</p>
   <details>
@@ -57,22 +96,22 @@
     <div id="changelog"></div>
   </details>
   <div class="menu">
-    <button class="bouton" id="exporter">Exporter la sauvegarde</button>
-    <button class="bouton" id="importer">Importer une sauvegarde</button>
+    <button class="bouton bouton-second" id="exporter">Exporter la sauvegarde</button>
+    <button class="bouton bouton-second" id="importer">Importer une sauvegarde</button>
   </div>
   <p class="liens"><a href="labo.html">Labo</a> · <a href="atelier.html">Atelier</a></p>
   <form method="dialog"><button class="bouton">Fermer</button></form>
 </dialog>
 
 <dialog id="dialogue-confirmer" aria-label="Confirmer">
-  <p>Une partie est en cours. La remplacer ?</p>
+  <p>Une nuit est en cours. La remplacer ?</p>
   <form method="dialog" class="menu">
     <button class="bouton" value="oui">Nouvelle partie</button>
-    <button class="bouton" value="non">Annuler</button>
+    <button class="bouton bouton-second" value="non">Annuler</button>
   </form>
 </dialog>
 
 <div class="jeu-toast" id="toast" role="status" hidden></div>
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/main.js?v=0.1.0"></script>
 </body>
 </html>

@@ -1,4 +1,6 @@
 # Changelog
 
 ## 0.1.0 — 2026-10-14
-- Premier lancement : écran titre, réglages, sauvegarde
+- Dix heures du soir : la première heure de la nuit se joue
+- Choisis deux visiteurs, écris des fragments avant que la bougie s'éteigne
+- Un degré écrit pour la première fois de la nuit (le hapax) compte double

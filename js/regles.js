@@ -8,11 +8,11 @@
 // (pour en piocher d'autres). La bougie brûle avec le temps, et chaque geste
 // lui coûte de la cire. L'heure est sauvée si le score atteint l'objectif
 // avant que la bougie s'éteigne.
-import { createRng } from './lib/rng.js';
-import { REGLAGES } from './data/reglages.js';
-import { FIGURES } from './data/figures.js';
-import { JOKERS } from './data/jokers.js';
-import { fragment, toutLeJeu } from './data/fragments.js';
+import { createRng } from './lib/rng.js?v=0.1.0';
+import { REGLAGES } from './data/reglages.js?v=0.1.0';
+import { FIGURES } from './data/figures.js?v=0.1.0';
+import { JOKERS } from './data/jokers.js?v=0.1.0';
+import { fragment, toutLeJeu } from './data/fragments.js?v=0.1.0';
 
 const JOKER = Object.fromEntries(JOKERS.map(j => [j.id, j]));
 export const joker = id => JOKER[id];

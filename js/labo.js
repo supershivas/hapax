@@ -1,110 +1,100 @@
 // Le Labo (section 16) : il MONTRE et compare, il ne modifie rien.
-// Chaque sujet utilise les mêmes modules que le jeu : ce qu'on voit ici est
-// ce que le jeu dessinera. Ajouter un sujet ou une variante = ajouter une
-// entrée dans GROUPES.
-import { mountLabo } from './lib/labo-shell.js';
-import { spriteCanvas, sheet, spriteToPNG, paletteToGPL, paletteToHex } from './lib/sprites.js';
-import { createAudio } from './lib/audio.js';
-import { PALETTE, ROLES } from './palette.js';
-import { chargerContenu } from './design-store.js';
-import { nouvellePartie, avancer } from './game.js';
-import { dessiner } from './render.js';
+// Chaque sujet utilise les mêmes modules que le jeu (ecran.js, regles.js,
+// sons.js) : ce qu'on voit ici est ce que le jeu affiche. Ajouter un sujet ou
+// une variante = ajouter une entrée dans GROUPES.
+import { mountLabo } from './lib/labo-shell.js?v=0.1.0';
+import { createAudio } from './lib/audio.js?v=0.1.0';
+import { PALETTE, ROLES } from './palette.js?v=0.1.0';
+import { chargerContenu } from './design-store.js?v=0.1.0';
+import { evaluer } from './regles.js?v=0.1.0';
+import { JOKERS } from './data/jokers.js?v=0.1.0';
+import { SORTES, DEGRES } from './data/fragments.js?v=0.1.0';
+import { definirSons } from './sons.js?v=0.1.0';
+import { el, carteFragment, carteJoker, bougie, poserBougie, nombre, jouerSequence } from './ecran.js?v=0.1.0';
 
-document.documentElement.style.setProperty('--jeu-accent', ROLES.accent);
+for (const [role, couleur] of Object.entries(ROLES)) document.documentElement.style.setProperty(`--jeu-${role}`, couleur);
 const NOM = document.title.replace(/^Labo — /, ''); // le nom vient de la page (une apostrophe ne casse rien)
-const { sprites, reglages } = await chargerContenu();
+const { reglages: R } = await chargerContenu();
 const audio = createAudio();
+definirSons(audio);
 
-const el = (tag, props = {}, ...kids) => {
-  const e = Object.assign(document.createElement(tag), props);
-  e.append(...kids);
-  return e;
-};
-const telecharger = (blob, nom) => {
-  const a = el('a', { href: URL.createObjectURL(blob), download: nom });
-  document.body.append(a); a.click(); a.remove();
-};
+const scene = (stage, ...enfants) => { const s = el('div', { class: 'scene' }, ...enfants); stage.append(s); return s; };
 
-// La planche d'échelle : tout se mesure au héros (section 7)
-function planche(stage, facteur) {
-  const p = el('div', { className: 'planche' });
-  for (const [nom, rows] of Object.entries(sprites)) {
-    p.append(el('figure', {}, spriteCanvas(rows, PALETTE, { scale: facteur }), el('figcaption', { textContent: `${nom} ${rows[0].length}×${rows.length}` })));
-  }
-  stage.append(p);
+// Les 52 fragments, rangés par sorte ; la flamme du hapax sur une rangée sur deux
+function planche(stage, { hapax }) {
+  scene(stage, ...SORTES.map((s, i) => el('div', { class: 'rangee' },
+    ...DEGRES.map(d => carteFragment(`${s.id}${d}`, { bouton: false, hapax: hapax === 'tous' || (hapax === 'alterne' && i % 2 === 0) })))));
 }
 
-// Une démo vivante du jeu, avec des réglages modifiés (variantes de réglage)
-function demo(stage, modif = {}) {
-  const r = structuredClone(reglages);
-  for (const [k, v] of Object.entries(modif)) Object.assign(r[k], v);
-  const c = el('canvas', { width: 240, height: 135 });
-  c.style.cssText = 'width:480px;max-width:100%;image-rendering:pixelated';
-  stage.append(c);
-  const ctx = c.getContext('2d');
-  const etat = nouvellePartie(7, r);
-  let t = 0, raf;
-  const vue = { width: 240, height: 135 };
-  const boucle = () => {
-    t += 1 / 60;
-    // Le héros se promène tout seul : une boucle lente, toujours la même
-    avancer(etat, 1 / 60, { x: Math.cos(t / 2), y: Math.sin(t / 1.3) }, r);
-    dessiner(ctx, etat, vue, sprites, r);
-    raf = requestAnimationFrame(boucle);
-  };
-  boucle();
-  return () => cancelAnimationFrame(raf);
+// Une écriture d'exemple rejouée en séquence, avec les visiteurs donnés
+function sequenceExemple(stage, ids, jokers, bougiePart = 1) {
+  const jok = el('div', { class: 'rangee' }, ...jokers.map(id => carteJoker(JOKERS.find(j => j.id === id))));
+  const page = el('div', { class: 'page' });
+  const calcul = el('p', { class: 'calcul' }, ' ');
+  const s = scene(stage, jok, page, calcul);
+  const bouton = el('button', { class: 'essai', textContent: 'Rejouer', onclick: jouer });
+  stage.append(bouton);
+  async function jouer() {
+    audio.unlock();
+    const res = evaluer(ids, { jokers, degresEcrits: [], bougie: bougiePart, froisses: 2 }, R);
+    page.replaceChildren(...ids.map(id => { const c = carteFragment(id, { bouton: false }); if (!res.compte.includes(id)) c.classList.add('compte-pas'); return c; }));
+    calcul.classList.remove('est-total');
+    await jouerSequence(res.etapes, { duree: R.sequence.duree, onEtape(e) {
+      if (e.type === 'figure') calcul.replaceChildren(el('span', { class: 'nom-figure', textContent: e.nom }), `${nombre(e.points)} × ${nombre(e.mult)}`);
+      else if (e.type === 'fragment') { const c = page.querySelector(`[data-id="${e.id}"]`); c?.classList.add('marque'); c?.append(el('span', { class: `gain${e.hapax ? ' est-hapax' : ''}`, textContent: `+${e.gain.points}` })); audio.sfx(e.hapax ? 'hapax' : 'compte'); }
+      else if (e.type === 'joker') { const j = jok.querySelector(`[data-id="${e.id}"]`); j?.classList.remove('agit'); void j?.offsetWidth; j?.classList.add('agit'); audio.sfx('visiteur'); }
+      else { calcul.classList.add('est-total'); calcul.replaceChildren(`${nombre(e.points)} × ${nombre(e.mult)} = ${nombre(e.total)}`); audio.sfx('total'); }
+      if (e.type === 'fragment' || e.type === 'joker') calcul.lastChild.textContent = `${nombre(e.points)} × ${nombre(e.mult)}`;
+    } });
+  }
+  jouer();
+  return s;
 }
 
 const GROUPES = [
-  { id: 'dessin', title: 'Dessin', topics: [
-    { id: 'echelle', title: 'Échelle', variants: [
-      { title: 'Taille réelle ×4', note: 'Le héros et chaque élément, côte à côte.', status: 'actuelle', render: s => planche(s, 4) },
-      { title: 'Taille réelle ×1', note: 'Ce que voit un joueur sur un écran sans agrandissement.', render: s => planche(s, 1) },
+  { id: 'cartes', title: 'Cartes', topics: [
+    { id: 'fragments', title: 'Fragments', variants: [
+      { title: 'Les 52, avec et sans hapax', note: 'Quatre sortes, treize degrés. La flamme marque un degré pas encore écrit cette nuit.', status: 'actuelle', render: s => planche(s, { hapax: 'alterne' }) },
+      { title: 'Sans aucun hapax', note: 'Fin de nuit : tous les degrés ont déjà été écrits.', render: s => planche(s, { hapax: 'aucun' }) },
     ] },
+    { id: 'visiteurs', title: 'Visiteurs', variants: [
+      { title: 'En jeu', note: 'Les huit visiteurs, tels qu\'ils s\'alignent au-dessus de l\'heure.', status: 'actuelle', render: s => scene(s, el('div', { class: 'rangee' }, ...JOKERS.map(j => carteJoker(j)))) },
+      { title: 'Au choix', note: 'Tels qu\'on les choisit au début de la nuit, avec leur note.', render: s => scene(s, el('div', { class: 'visiteurs-liste' }, ...JOKERS.map((j, i) => carteJoker(j, { grand: true, choisi: i < 2 })))) },
+    ] },
+  ] },
+  { id: 'heure', title: 'L\'heure', topics: [
+    { id: 'bougie', title: 'Bougie', variants: [
+      { title: 'Quatre moments', note: 'Neuve, à moitié (Fourier s\'éveille), basse (la flamme s\'affole), éteinte.', status: 'actuelle', render: s => scene(s, el('div', { class: 'rangee' }, ...[1, 0.5, 0.18, 0].map(p => { const b = bougie(); poserBougie(b, p); return el('figure', {}, b, el('figcaption', { textContent: `${Math.round(p * 100)} %` })); }))) },
+    ] },
+    { id: 'sequence', title: 'Séquence du score', variants: [
+      { title: 'Une Lemme, deux visiteurs', note: 'Chevalier puis Stéphanie D. : le +mult avant le ×mult.', status: 'actuelle', render: s => sequenceExemple(s, ['T7', 'R7', 'I2'], ['chevalier', 'stephanie']) },
+      { title: 'Une Résolvante, quatre visiteurs', note: 'Le cas long : la séquence doit tenir en 1,6 s.', render: s => sequenceExemple(s, ['I3', 'I4', 'I5', 'I6', 'I7'], ['insomnie', 'chevalier', 'abel', 'fourier'], 0.3) },
+    ] },
+  ] },
+  { id: 'dessin', title: 'Dessin', topics: [
     { id: 'palette', title: 'Palette', variants: [
-      { title: 'Nuancier', note: 'Les couleurs du jeu, et rien d\'autre.', status: 'actuelle', render: s => {
-        s.append(el('div', { className: 'nuancier' }, ...Object.entries(PALETTE).map(([k, hex]) => {
+      { title: 'Nuancier', note: 'Les quatre couleurs du jeu, et rien d\'autre.', status: 'actuelle', render: s => {
+        s.append(el('div', { class: 'nuancier' }, ...Object.entries(PALETTE).map(([k, hex]) => {
           const d = el('div', { textContent: `${k} ${hex}` });
           d.style.background = hex;
-          const parLum = Object.values(PALETTE).sort((a, b) => lum(a) - lum(b));
-          d.style.color = lum(hex) > 0.3 ? parLum[0] : parLum[parLum.length - 1];
+          d.style.color = lum(hex) > 0.3 ? PALETTE.e : PALETTE.v;
           return d;
         })));
-        s.append(el('p', {}, el('button', { className: 'essai', textContent: 'Palette .gpl', onclick: () => telecharger(new Blob([paletteToGPL(PALETTE, NOM)]), 'hapax.gpl') }),
-          el('button', { className: 'essai', textContent: 'Palette .hex', onclick: () => telecharger(new Blob([paletteToHex(PALETTE)]), 'hapax.hex') })));
       } },
       { title: 'Contrastes', note: 'Rapport WCAG de chaque paire (4,5 pour du texte, 3 pour un signe).', render: s => {
         const ks = Object.keys(PALETTE);
-        const t = el('table', { className: 'contraste' });
+        const t = el('table', { class: 'contraste' });
         t.append(el('tr', {}, el('th'), ...ks.map(k => el('th', { textContent: k }))));
         for (const a of ks) t.append(el('tr', {}, el('th', { textContent: a }), ...ks.map(b => el('td', { textContent: a === b ? '—' : contraste(PALETTE[a], PALETTE[b]).toFixed(1) }))));
         s.append(t);
       } },
-    ] },
-    { id: 'sprites', title: 'Sprites', variants: [
-      { title: 'Planche', note: 'Tout ce que le jeu peint, à exporter pour le reprendre dans un éditeur.', status: 'actuelle', render: s => {
-        const c = sheet(Object.values(sprites), PALETTE, { scale: 6, gap: 2 });
-        c.style.imageRendering = 'pixelated';
-        s.append(c, el('p'));
-        for (const [nom, rows] of Object.entries(sprites)) {
-          s.append(el('button', { className: 'essai', textContent: `${nom}.png`, onclick: async () => telecharger(await spriteToPNG(rows, PALETTE, 1), `${nom}.png`) }));
-        }
-      } },
-    ] },
-  ] },
-  { id: 'jeu', title: 'Jeu', topics: [
-    { id: 'vitesse', title: 'Vitesse du héros', variants: [
-      { title: `${reglages.heros.vitesse} px/s`, note: 'La vitesse actuelle.', status: 'actuelle', render: s => demo(s) },
-      { title: '90 px/s', note: 'Plus vif : le monde paraît plus petit.', render: s => demo(s, { heros: { vitesse: 90 } }) },
-      { title: '35 px/s', note: 'Plus lent, plus contemplatif.', render: s => demo(s, { heros: { vitesse: 35 } }) },
     ] },
   ] },
   { id: 'son', title: 'Son', topics: [
     { id: 'bruitages', title: 'Bruitages', variants: [
       { title: 'Banque', note: 'Chaque son du jeu, à écouter.', status: 'actuelle', render: s => {
         audio.unlockOn(s);
-        for (const nom of audio.names) s.append(el('button', { className: 'essai', textContent: nom, onclick: () => { audio.unlock(); audio.sfx(nom); } }));
+        for (const nom of audio.names) s.append(el('button', { class: 'essai', textContent: nom, onclick: () => { audio.unlock(); audio.sfx(nom); } }));
       } },
     ] },
   ] },

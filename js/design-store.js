@@ -1,8 +1,7 @@
-// Le contenu modifiable par l'Atelier (section 17) : la version publiée dans
-// le dépôt (assets/design/*.json), plus les retouches de ce navigateur pas
-// encore publiées. Le jeu l'appelle au lancement, avant de dessiner.
-import { SPRITES } from './sprites-data.js';
-import { REGLAGES } from './data/reglages.js';
+// Le contenu modifiable par l'Atelier (section 17) : les réglages chiffrés
+// publiés dans le dépôt (assets/design/reglages.json), plus les retouches de
+// ce navigateur pas encore publiées. Le jeu l'appelle au lancement.
+import { REGLAGES } from './data/reglages.js?v=0.1.0';
 
 const BROUILLON = 'hapax:atelier';
 
@@ -28,16 +27,11 @@ const fusion = (base, plus) => {
   return out;
 };
 
-// → { sprites, reglages, publie: { sprites, reglages }, aPublier: n }
+export const compterRetouches = b => Object.values(b.reglages || {}).reduce((n, g) => n + Object.keys(g).length, 0);
+
+// → { reglages, publie: { reglages }, aPublier: n }
 export async function chargerContenu() {
-  const [sprites, reglages] = await Promise.all([lireJSON('assets/design/sprites.json'), lireJSON('assets/design/reglages.json')]);
-  const publie = { sprites: { ...SPRITES, ...(sprites || {}) }, reglages: fusion(REGLAGES, reglages) };
+  const publie = { reglages: fusion(REGLAGES, await lireJSON('assets/design/reglages.json')) };
   const b = lireBrouillon();
-  const aPublier = Object.keys(b.sprites || {}).length + Object.keys(b.reglages || {}).length;
-  return {
-    sprites: { ...publie.sprites, ...(b.sprites || {}) },
-    reglages: fusion(publie.reglages, b.reglages),
-    publie,
-    aPublier,
-  };
+  return { reglages: fusion(publie.reglages, b.reglages), publie, aPublier: compterRetouches(b) };
 }

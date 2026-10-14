@@ -24,3 +24,6 @@ body { font: 15px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif; color: 
 .at-note { font-size: 13px; opacity: .7; max-width: 640px; }
 .at-modifie { color: #b3261e; font-weight: 600; }
 .at-toast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); background: #1c1c1e; color: #fff; padding: 10px 16px; border-radius: 8px; }
+.at-work h3 { font-size: 14px; margin: 18px 0 6px; text-transform: uppercase; letter-spacing: .06em; opacity: .7; }
+.at-field { grid-template-columns: minmax(0, 12em) minmax(0, 1fr); }
+.at-field input { width: 100%; min-width: 0; }

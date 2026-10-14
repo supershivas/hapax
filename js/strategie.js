@@ -3,10 +3,10 @@
 //   appliqué : cherche la meilleure figure, froisse quand elle ne suffira pas ;
 //   hasard   : écrit 1 à 5 fragments pris au hasard, ne froisse jamais.
 // `reflexion` : secondes de jeu qu'un joueur met à chaque geste (la bougie brûle).
-import { createRng } from './lib/rng.js';
-import { REGLAGES } from './data/reglages.js';
-import { choisirVisiteurs, bruler, ecrire, froisser, evaluer, contexte, nouvelleNuit } from './regles.js';
-import { fragment } from './data/fragments.js';
+import { createRng } from './lib/rng.js?v=0.1.0';
+import { REGLAGES } from './data/reglages.js?v=0.1.0';
+import { choisirVisiteurs, bruler, ecrire, froisser, evaluer, contexte, nouvelleNuit } from './regles.js?v=0.1.0';
+import { fragment } from './data/fragments.js?v=0.1.0';
 
 // Tous les choix de 1 à n fragments dans la main
 function* choix(main, n) {
